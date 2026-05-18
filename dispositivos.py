@@ -1,19 +1,9 @@
-#
-#OBJETIVO:
-#Implementar la capa HAL (Hardware Abstraction Layer)
-#del proyecto Bastón Inteligente, encapsulando la
-#configuración, lectura y control de sensores y actuadores
-#mediante clases reutilizables y seguras para la integración
-#con sistemas de comunicación MQTT.
-
-#INTEGRANTES:
+#PROYECTO:Baston Inteligente
+#INTEGRANTES: 
 #Ramirez Abundiz Berenice 22240234
 #Rivera Ponce David Eduardo 22240226
 #Varela Ambriz Saul 22240256
-
-#PROYECTO:
-#Bastón Inteligente
-#
+#DESCRIPCION:Contiene las clases de Sensores y Actuadores , encargados de configurar los componentes y realizar lecturas de los mismo , asi como apagarlos para una mejor practica y seguridad
 
 from hcsr04 import HCSR04 # librería para manejar el ultrasónico
 from ir_rx.nec import NEC_16 # librería para manejar el control remoto
@@ -64,11 +54,14 @@ class SensorBox:
         self.control_botones = {            
             0x45: 'ultrasonico_leer_cm', # Botón 'APAGAR' que activa la función de escuchar los 'cm leídos por el ultrasónico' por la 'bocina'
             0x46: 'pir_movimiento', # Botón 'VOL+' que activa la función de 'leer el PIR' y activar la cámara.
-            0x47: 'zumbador_localizador' # Botón 'FUNC/STOP' que sirve para localizar el bastón 'activando el zumbador'            
+            0x47: 'zumbador_localizador', # Botón 'FUNC/STOP' que sirve para localizar el bastón 'activando el zumbador'
+            0x40: 'resumen' # Botón '>||' para obtener el resumen de lecturas de los 3 sensores.            
         }
         
         #variable que guarda el botón presionado para tomar decisiones de lógica
-        self.control_decision = None        
+        self.control_decision = None
+        # variable que guarda la última decision del control
+        self.control_ultimo = None
     
     """
     Control remoto
@@ -85,10 +78,12 @@ class SensorBox:
     Permite obtener qué botón ha sido presionado
     """
     def control_obtener_valor(self):
-        decision = self.control_botones.get(self.control_decision,None)
-        if decision == "pir_movimiento":
-            # Limpiamos cualquier detección vieja
-            self.pir_movimiento_detectado = False                    
+        decision = self.control_botones.get(self.control_decision, "desconocido")        
+        
+        self.control_limpiar_valor()
+        
+        if decision not in ("desconocido", "resumen"): 
+            self.control_ultimo = decision
             
         return decision
     
@@ -107,32 +102,33 @@ class SensorBox:
     3.- Establece la variable de control (bandera) del PIR
     """
     def pir_configurar(self):
-        # PIR
-        self.pir = Pin(13, Pin.IN, Pin.PULL_DOWN)
-        # Registrar interrupción con flanco ascendente
-        self.pir.irq(trigger=Pin.IRQ_RISING, handler=self.pir_al_detectar)
-        # Bandera movimiento: ISR -> PIR
-        self.pir_movimiento_detectado = False
+        # Configuramos el pin 
+        self.pir = Pin(12, Pin.IN, Pin.PULL_DOWN)
+        
+        # La variable siempre reflejará el estado actual
+        self.pir_es_movimiento_detectado = False
+        
+        # INTERRUPCIÓN EN AMBOS FLANCOS (RISING y FALLING)
+        # Esto dispara la función tanto cuando detecta como cuando deja de detectar.
+        self.pir.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=self.pir_controlador_automatico)
     
     """
     PIR
-    Establece la funcionalidad del código a ejecutar cuando
-    el PIR detecta movimiento.
+    El PIR cambia la bandera 'self.pir_es_movimiento_detectado'.
+    Cuando se detecta movimiento, la bandera es True, de lo contrario
+    será False
     """
     # ISR: PIR
-    def pir_al_detectar(self, pin):
-        self.pir_movimiento_detectado = True        
-    
+    def pir_controlador_automatico(self, pin):
+        self.pir_es_movimiento_detectado = bool(pin.value())        
+                        
     """
     PIR
-    Retorna true si el PIR ha detectado movimiento,
-    de lo contrario, false
+    Se retorna el estado actual que la interrupción mantiene al día.
     """
-    def pir_obtener_valor(self):
-        decision = self.pir_movimiento_detectado
-        self.pir_movimiento_detectado = False
-        return decision
-            
+    def pir_obtener_valor(self):                
+        return self.pir_es_movimiento_detectado
+                                
     """
     Ultrasónico
     1.- Configura los pines de conexión del sensor ultrasónico
@@ -174,10 +170,9 @@ class SensorBox:
         # Devuelve un diccionario con el estado actual de todos los sensores
         return {
             "ultrasonico": self.ultrasonico_obtener_valor(),
-            "control": self.control_obtener_valor(),
+            "control": self.control_ultimo,
             "pir": self.pir_obtener_valor()
-        }
-        
+        }        
 
 """
 ===================================================================================
@@ -236,8 +231,8 @@ class ActuatorBox:
         None
         """
 
-        # Se repite el sonido 5 veces
-        for _ in range(5):
+        # Se repite el sonido 10 veces
+        for _ in range(10):
 
             # Se enciende el zumbador
             self.zumbador.value(1)
