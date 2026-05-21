@@ -7,9 +7,9 @@
 
 from hcsr04 import HCSR04 # librería para manejar el ultrasónico
 from ir_rx.nec import NEC_16 # librería para manejar el control remoto
-from machine import Pin, PWM # Se importan las clases necesarias para controlar pines digitales y señales PWM
+from machine import Pin, PWM,DAC # Se importan las clases necesarias para controlar pines digitales y señales PWM
 import time  # librería para manejar tiempos (pausas)
-from time import sleep 
+from time import sleep,sleep_us
 
 """
 Clase 'SensorBox' encargada de configurar,
@@ -158,9 +158,9 @@ class SensorBox:
             sleep(0.07) #tiempo de espera para lecturas eficientes
             
         if self.ultrasonico_lecturas:
-            return round(sum(self.ultrasonico_lecturas)/len(self.ultrasonico_lecturas), 1) #redondeando double para que tenga 1 decimal
+            return int(round(sum(self.ultrasonico_lecturas) / len(self.ultrasonico_lecturas))) #redondeando en entero , .6 hacia arriba y .5 hacia el entero inferior
         
-        return 200 # sin lectura válida, no retorna un valor no numérico
+        return 800 # sin lectura válida, retorna un numero fuera de lectura.Sabiendo que el ultrasonico lee hasta 250cm
     
     """
     Retorna un diccionario con los valores leídos en tiempo
@@ -172,7 +172,14 @@ class SensorBox:
             "ultrasonico": self.ultrasonico_obtener_valor(),
             "control": self.control_ultimo,
             "pir": self.pir_obtener_valor()
-        }        
+        }
+    
+    def simular_boton_consola(self, boton_nombre):
+        """
+        Simula la pulsación de un botón asignando directamente la acción.
+        """
+        self.control_ultimo = boton_nombre
+        print("Simulando botón del control remoto:", boton_nombre)     
 
 """
 ===================================================================================
@@ -184,12 +191,13 @@ class ActuatorBox:
     Clase encargada de controlar los actuadores del bastón inteligente.
     """
 
+    """
+    Configuracion e inicializacion de los componentes
+    """
     def __init__(self):
-        """
-        Inicializa los dispositivos de salida del sistema.
-        """
-        # Se configura la bocina en el pin 25 usando PWM (permite generar sonido)
-        self.bocina = PWM(Pin(25), freq=1000, duty=0)
+        # Se configura la bocina en el pin 25 usando DAC para reproducir formato WAV
+        self.bocina = DAC(Pin(25))
+        self.estado = "" # Ayuda a que el audio no se repita sin parar,si no solo una vez
 
         # Se configura el zumbador como salida digital (encendido/apagado)
         self.zumbador = Pin(26, Pin.OUT)
@@ -197,31 +205,46 @@ class ActuatorBox:
         # Se configura el motor de vibración como salida digital
         self.motor_vibracion = Pin(27, Pin.OUT)
 
-    def reproducir_distancia(self, distancia_cm):
-        """
-        Simula la reproducción por voz de la distancia detectada.
+    """Reproduce archivos WAV de 8-bit, 8kHz mono"""
+    def reproduce_wav(self,archivo):
+        try:
+            with open(archivo, "rb") as f:
+                f.seek(44) # Salta el header del WAV 
+                buf = bytearray(1024) # Buffer para eficiencia 
+                while True:
+                    n = f.readinto(buf)
+                    if n == 0: break
+                    for i in range(n):
+                        self.bocina.write(buf[i]) # Envía muestra al DAC 
+                        sleep_us(125) # Delay para 8000Hz (1/8000) 
+        except:
+            print("Error al leer", archivo)
 
-        Parámetros:
-        distancia_cm (int): Distancia medida en centímetros.
 
-        Retorna:
-        None
-        """
+    """
+    Reproduce el archivo de audio en cada caso, con base a la distancia que retorna el ultrasonico
+    Distancia <= 20cm: Reproducira "Desnivel bajo,adelante"
+    Distancia 20cm - 50cm: Reproducira "Desnivel medio, precaucion"
+    Distancia >50cm: Reproducir "Desnivel alto,cuidado"
+    La lectura del ultrasonico posicionado al suelo plano es de 2cm
+    """
+    def reproducir_distancia(self, distancia):
 
-        # Se calcula una frecuencia basada en la distancia (más cerca = sonido más agudo)
-        frecuencia = 500 + (2000 - min(distancia_cm, 200) * 5)
+        if distancia > 50 and  distancia < 800 :
+            if self.estado != "alto":
+                self.reproduce_wav("alto.wav")
+                self.estado = "alto"
+        elif distancia > 20:
+            if self.estado != "medio":
+                self.reproduce_wav("medio.wav")
+                self.estado = "medio"
+        elif distancia > 0 :
+            if self.estado != "bajo":
+                self.reproduce_wav("bajo.wav")
+                self.estado = "bajo"
+        else:
+            self.estado = "normal"
 
-        # Se ajusta la frecuencia de la bocina
-        self.bocina.freq(int(frecuencia))
-
-        # Se activa la bocina con una intensidad media
-        self.bocina.duty(600)
-
-        # Se mantiene el sonido durante 0.3 segundos
-        time.sleep(0.3)
-
-        # Se apaga la bocina
-        self.bocina.duty(0)
 
     def activar_modo_localizacion(self):
         """

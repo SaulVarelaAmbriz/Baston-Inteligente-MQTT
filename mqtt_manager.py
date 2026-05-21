@@ -150,7 +150,7 @@ class MQTTManager:
         # ZUMBADOR
         if topico == b"baston/actuadores/zumbador":
 
-            if mensaje == b"ON":
+            if mensaje == b'1':
 
                 print("Activando localizador")
 
@@ -161,7 +161,7 @@ class MQTTManager:
         # MOTOR DE VIBRACIÓN
         elif topico == b"baston/actuadores/vibracion":
 
-            if mensaje == b"ON":
+            if mensaje == b'1':
 
                 print("Activando vibración")
 
@@ -172,7 +172,7 @@ class MQTTManager:
         # BOCINA
         elif topico == b"baston/actuadores/bocina":
 
-            if mensaje == b"ON":
+            if mensaje == b'1':
 
                 print("Activando bocina")
 
@@ -201,7 +201,7 @@ class MQTTManager:
             str(datos["ultrasonico"])
         )
 
-        # PIR
+         # PIR
         self.cliente.publish(
             b"baston/sensores/pir",
             str(datos["pir"])
