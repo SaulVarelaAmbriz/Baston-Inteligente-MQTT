@@ -106,7 +106,7 @@ class SensorBox:
         self.pir = Pin(12, Pin.IN, Pin.PULL_DOWN)
         
         # La variable siempre reflejará el estado actual
-        self.pir_es_movimiento_detectado = False
+        self.pir_es_movimiento_detectado = 0
         
         # INTERRUPCIÓN EN AMBOS FLANCOS (RISING y FALLING)
         # Esto dispara la función tanto cuando detecta como cuando deja de detectar.
@@ -120,7 +120,7 @@ class SensorBox:
     """
     # ISR: PIR
     def pir_controlador_automatico(self, pin):
-        self.pir_es_movimiento_detectado = bool(pin.value())        
+        self.pir_es_movimiento_detectado = pin.value()
                         
     """
     PIR
@@ -245,15 +245,16 @@ class ActuatorBox:
         else:
             self.estado = "normal"
 
-
+    def bocina_obtener_estado(self):
+        return self.estado
+    
     def activar_modo_localizacion(self):
         """
         Activa el zumbador en forma intermitente para localizar el bastón.
 
         Retorna:
         None
-        """
-
+        """                
         # Se repite el sonido 10 veces
         for _ in range(10):
 
@@ -267,7 +268,7 @@ class ActuatorBox:
             self.zumbador.value(0)
 
             # Se espera antes del siguiente pulso
-            time.sleep(0.3)
+            time.sleep(0.3)                                    
 
     def vibrar_alerta_persona(self, duracion=2):
         """
