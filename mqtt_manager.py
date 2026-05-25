@@ -47,8 +47,8 @@ class MQTTManager:
 
 
         #WIFI DATOS
-        self.SSID = ""
-        self.PASSWORD = ""
+        self.SSID = "Megacable_2.4G_8DDA"
+        self.PASSWORD = "Mqap7dUM"        
 
 
         # CONFIGURACIÓN MQTT

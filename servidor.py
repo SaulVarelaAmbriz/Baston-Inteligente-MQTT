@@ -30,7 +30,7 @@ import time
 # IMPORTANTE:
 # Cambiar esta IP por la IP de la computadora
 # donde se encuentra instalado Mosquitto.
-BROKER = "localhost"
+BROKER = "broker.emqx.io"
 
 PUERTO = 1883
 
@@ -39,14 +39,15 @@ PUERTO = 1883
 # =========================================================
 
 # Sensores
-TOPICO_ULTRASONICO = "baston/sensores/ultrasonico"
-TOPICO_PIR = "baston/sensores/pir"
-TOPICO_CONTROL = "baston/sensores/control"
+TOPICO_ULTRASONICO = "baston_equipo_7718/sensores/ultrasonico"
+TOPICO_PIR = "baston_equipo_7718/sensores/pir"
+TOPICO_CONTROL = "baston_equipo_7718/sensores/control"
 
 # Actuadores
-TOPICO_ZUMBADOR = "baston/actuadores/zumbador"
-TOPICO_VIBRACION = "baston/actuadores/vibracion"
-TOPICO_BOCINA = "baston/actuadores/bocina"
+TOPICO_ZUMBADOR = "baston_equipo_7718/actuadores/zumbador"
+TOPICO_VIBRACION = "baston_equipo_7718/actuadores/vibracion"
+TOPICO_BOCINA = "baston_equipo_7718/actuadores/bocina"
+
 
 # =========================================================
 # CALLBACK CONEXIÓN MQTT
@@ -148,7 +149,7 @@ while True:
 
         cliente.publish(
             TOPICO_ZUMBADOR,
-            "ON"
+            "1"
         )
 
         print("Comando enviado al zumbador")
@@ -161,7 +162,7 @@ while True:
 
         cliente.publish(
             TOPICO_VIBRACION,
-            "ON"
+            "1"
         )
 
         print("Comando enviado al motor")
@@ -174,7 +175,7 @@ while True:
 
         cliente.publish(
             TOPICO_BOCINA,
-            "ON"
+            "1"
         )
 
         print("Comando enviado a la bocina")
