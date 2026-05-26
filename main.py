@@ -65,26 +65,53 @@ ultima_publicacion = time.time()
 while True:
 
     try:
-
-
-        # REVISAR MENSAJES MQTT
+        # 1 -- REVISAR MENSAJES MQTT
         mqtt.escuchar()
 
-        # PUBLICAR TELEMETRÍA
+
+
+
+
+        # 2 -- PUBLICAR TELEMETRÍA
         ahora = time.time()
-
+        
         # Publicar sensores cada 5 segundos
-        if (ahora - ultima_publicacion) >= 5:
-
+        if (ahora - ultima_publicacion) >= 5:            
             mqtt.publicar_sensores()
-
-            ultima_publicacion = ahora
-
-
-        # PEQUEÑA PAUSA CPU
-
-
+            ultima_publicacion = ahora        
+        
+        
+        
+        
+        
+        
+        # 3 -- Lógica del funcionamiento del bastón:
+        control_valor = sensores.control_obtener_valor()        
+    
+        if control_valor == "ultrasonico_leer_cm":
+            print("\nActivando ultrasonico y bocina...")            
+            mqtt.bocina_publicar_encendido()
+            
+        elif control_valor == "pir_movimiento":
+            pir_valor = sensores.pir_obtener_valor()
+            
+            print("\nValor del PIR...")            
+            print(pir_valor)
+            # Falta la implementación de la cámara cuando 'pir_valor = 1'
+            # y el motor de vibración            
+            #
+            #
+            if pir_valor == 1:
+                mqtt.vibracion_publicar_encendido()
+        
+        elif control_valor == "zumbador_localizador":
+            print("\nActivando Zumbador...")
+            mqtt.zumbador_publicar_encendido()
+                    
         time.sleep(0.1)
+        
+        
+
 
     except Exception as e:
 

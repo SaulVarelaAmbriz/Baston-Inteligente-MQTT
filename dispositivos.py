@@ -82,7 +82,7 @@ class SensorBox:
         
         self.control_limpiar_valor()
         
-        if decision not in ("desconocido", "resumen"): 
+        if decision not in ("desconocido", "resumen"):
             self.control_ultimo = decision
             
         return decision
@@ -160,7 +160,7 @@ class SensorBox:
         if self.ultrasonico_lecturas:
             return int(round(sum(self.ultrasonico_lecturas) / len(self.ultrasonico_lecturas))) #redondeando en entero , .6 hacia arriba y .5 hacia el entero inferior
         
-        return 800 # sin lectura válida, retorna un numero fuera de lectura.Sabiendo que el ultrasonico lee hasta 250cm
+        return 800 # sin lectura válida, retorna un numero fuera de lectura.Sabiendo que el ultrasonico lee hasta 250cm        
     
     """
     Retorna un diccionario con los valores leídos en tiempo
@@ -173,13 +173,7 @@ class SensorBox:
             "control": self.control_ultimo,
             "pir": self.pir_obtener_valor()
         }
-    
-    def simular_boton_consola(self, boton_nombre):
-        """
-        Simula la pulsación de un botón asignando directamente la acción.
-        """
-        self.control_ultimo = boton_nombre
-        print("Simulando botón del control remoto:", boton_nombre)     
+        
 
 """
 ===================================================================================
@@ -290,7 +284,7 @@ class ActuatorBox:
         # Se apaga el motor
         self.motor_vibracion.value(0)
 
-    def vibracion_intermitente(self, repeticiones=3):
+    def vibracion_intermitente(self, repeticiones=6):
         """
         Genera una vibración intermitente como alerta discreta.
 

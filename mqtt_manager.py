@@ -150,16 +150,15 @@ class MQTTManager:
         # ZUMBADOR
         if topico == b"baston_equipo_7718/actuadores/zumbador":
 
-            if mensaje == b'1':
-
+            if mensaje == b'1':                                
                 print("Activando localizador")
-
+                
                 # HAL
                 self.actuadores.activar_modo_localizacion()
                 
                 """
                 Después de encender el zumbador,
-                cuando se apague de nuevo, publicamos su 'estado' en 0            
+                cuando se apague de nuevo, publicamos su 'estado' en 0
                 """
                 self.cliente.publish(
                     b"baston_equipo_7718/actuadores/zumbador",
@@ -170,16 +169,16 @@ class MQTTManager:
         # MOTOR DE VIBRACIÓN
         elif topico == b"baston_equipo_7718/actuadores/vibracion":
 
-            if mensaje == b'1':
-
+            if mensaje == b'1':                
                 print("Activando vibración")
-
+                
+                
                 # HAL
                 self.actuadores.vibracion_intermitente()
                 
                 """
                 Después de encender la vibración,
-                cuando se apague de nuevo, publicamos su 'estado' en 0                
+                cuando se apague de nuevo, publicamos su 'estado' en 0
                 """
                 self.cliente.publish(
                     b"baston_equipo_7718/actuadores/vibracion",
@@ -191,16 +190,16 @@ class MQTTManager:
         elif topico == b"baston_equipo_7718/actuadores/bocina":
 
             if mensaje == b'1':
-
+                
                 print("Activando bocina")
-
+                
                 distancia = self.sensores.ultrasonico_obtener_valor()
-
+                
                 # HAL
                 self.actuadores.reproducir_distancia(
                     distancia
-                )
-                                                
+                    )
+                
                 """
                 Actualizamos el 'estado' en que se encuentra
                 funcionando la bocina
@@ -221,7 +220,42 @@ class MQTTManager:
                     "Sin mensaje"
                     )
                 
+                
 
+    """
+    Se publica el 'estado' del zumbador en '1'.
+    Esto activa el 'CALLBACK MQTT'
+    """
+    def zumbador_publicar_encendido(self):
+        self.cliente.publish(
+            b"baston_equipo_7718/actuadores/zumbador",
+            str(1)
+        )
+       
+    """
+    Se publica el 'estado' de la vibración en '1'.
+    Esto activa el 'CALLBACK MQTT'
+    """
+    def vibracion_publicar_encendido(self):
+        self.cliente.publish(
+            b"baston_equipo_7718/actuadores/vibracion",
+            str(1)
+        )
+        
+        
+    """
+    Se publica el 'estado' de la bocina en '1'.
+    Esto activa el 'CALLBACK MQTT'
+    """  
+    def bocina_publicar_encendido(self):
+        self.cliente.publish(
+            b"baston_equipo_7718/actuadores/bocina",
+            str(1)
+        )                    
+        
+        
+    
+    
     # PUBLICAR SENSORES
     def publicar_sensores(self):
         """
@@ -229,7 +263,7 @@ class MQTTManager:
         del Bastón Inteligente hacia el broker MQTT.
         """
 
-        # Obtención centralizada de sensores
+        # Obtención centralizada de sensores        
         datos = self.sensores.obtener_resumen_sensores()
 
   
@@ -250,9 +284,7 @@ class MQTTManager:
         self.cliente.publish(
             b"baston_equipo_7718/sensores/control",
             str(datos["control"])
-        )
-
-        print("Sensores publicados")
+        )        
 
 
     # ESCUCHAR MENSAJES MQTT
