@@ -16,71 +16,84 @@ from firebase_admin import credentials, firestore
 import paho.mqtt.client as mqtt  # Librería MQTT estándar para PC
 
 class Firestore:
-    
+    '''
+    Incializa la conexion con Firestore y configura MQTT
+    '''
     def __init__(self):
         """
         Constructor: Inicializa la conexión con Firestore y configura MQTT.
+        Hacemos uso del archivo JSON que contiene la clave privada , necesaria para autenticar y poder almacenar datos en Firestore
         """
-        print("Inicializando conexión con Cloud Firestore desde PC...")
         try:
-            cred = credentials.Certificate("bastoninteligente-311b5-firebase-adminsdk-fbsvc-90f9867445.json") 
+            cred = credentials.Certificate("bastoninteligente-311b5-firebase-adminsdk-fbsvc-872f6c099c.json") 
             firebase_admin.initialize_app(cred)
             
             # Guardamos la base de datos en el objeto (self.db)
             self.db = firestore.client()
-            print("Conexión con Firestore establecida exitosamente.")
-            
+            print("Conexión con Firestore correcto")
+         
             # Inicializamos la configuración de MQTT
             self.configurar_mqtt()
         except Exception as e:
-            print("Error crítico al conectar con Firebase:", e)
+            print("Error al establecer conexion a Firestore", e)
             exit()
 
+    '''
+    Configura el protoloco MQTT, hacemos uso de broker publico 
+    '''
     def configurar_mqtt(self):   
         # CONFIGURACIÓN MQTT
         self.BROKER = "broker.emqx.io"
         self.PUERTO = 1883
         self.CLIENT_ID = "BastonServidor_PC"  # ID fijo identificable en el broker
 
-        # Creación del Cliente MQTT (Sintaxis de paho-mqtt)
+        # Creación del Cliente MQTT
         self.cliente = mqtt.Client(client_id=self.CLIENT_ID)
 
         # Configuración de los Callbacks apuntando a los métodos de la clase
         self.cliente.on_connect = self.al_conectar
         self.cliente.on_message = self.al_recibir_mensaje
 
-        # Tópicos guardados en el objeto
+        # Tópicos utilizados
         self.TOPICO_ULTRASONICO = "baston_equipo_7718/sensores/ultrasonico"
-        self.TOPICO_PIR = "baston_equipo_7718/sensores/pir"
-
+    
+    '''
+    Retorna la fecha y hora actual del servidor (PC) en formato de string
+    '''
     def timestamp_legible(self):
-        """Retorna la fecha y hora actual de la PC en formato string"""
-        # Al estar en PC, datetime ya maneja la hora local del sistema
-        now = datetime.now()
+        now = datetime.now()1
+        
         return now.strftime("%Y-%m-%d %H:%M:%S")
+    
 
+    '''
+    Encargado de suscribirse a los topicos de los cuales recibiremos datos para publicar
+    Se ejecuta automáticamente cuando la PC se conecta al Broker
+    '''
     def al_conectar(self, client, userdata, flags, rc):
-        """Se ejecuta automáticamente cuando la PC se conecta al Broker"""
         if rc == 0:
             print("Conectado exitosamente al Broker MQTT.")
-            # Nos suscribimos usando self.TOPICO_...
             self.cliente.subscribe(self.TOPICO_ULTRASONICO)
-            self.cliente.subscribe(self.TOPICO_PIR)
-            print("Suscrito a la telemetría. Esperando datos...")
+            print("Suscrito. Esperando datos...")
         else:
-            print(f"Error de conexión al Broker. Código de retorno: {rc}")
+            print(f"Error de conexión al Broker.Código de retorno: {rc}")
 
+    '''
+    Se ejecuta automaticamente por medio del callback que acciona cuando recibe un mensaje de MQTT
+    Encargado de guardar los datos en Firestore , una vez recibidos.
+    Guarda los datos relevantes, como cuando la distancia es mayor a 20, de esta manera la persona de apoyo del no vidente
+    sabe que tan expuesto al riesgo esta el usuario y que ubicaciones evitar para evitar accidentes.
+    '''
     def al_recibir_mensaje(self, client, userdata, msg):
-        """Se ejecuta cada vez que llega un mensaje a los tópicos suscritos"""
         ts = self.timestamp_legible()
         
-        # En paho-mqtt, el tópico viene en msg.topic y el mensaje en msg.payload (en bytes, hay que decodificarlo)
+        # En paho-mqtt, el tópico viene en msg.topic y el mensaje en msg.payload (en bytes, por eso necesitamos decodificarlo)
         topico = msg.topic
         mensaje = msg.payload.decode('utf-8')
 
         print(f"[{ts}] Telemetría Recibida -> {topico.split('/')[-1]}: {mensaje}")
 
-        # EVALUACIÓN DEL EVENTO: ULTRASÓNICO (Alertas de Desnivel)
+        # EVALUACIÓN DEL EVENTO: ULTRASÓNICO
         if topico == self.TOPICO_ULTRASONICO:
             try:
                 distancia = int(mensaje)
@@ -101,54 +114,72 @@ class Firestore:
                 
                     # Guardamos en la colección de Firestore usando self.db
                     self.db.collection("historial_desniveles").add(registro_desnivel)
-                    print(f"[Firestore] Histórico registrado: {tipo_riesgo} ({distancia} CM)")
+                    print(f" Histórico registrado: {tipo_riesgo} ({distancia} CM)")
             except Exception as e:
-                print("[Firestore] Error al procesar datos del ultrasónico:", e)
+                print("Error al procesar datos del ultrasónico:", e)
 
+    '''
+        Conecta al broker e inicia un bucle asincrono (no bloqueante)
+    '''
     def iniciar(self):
-        """Conecta al broker e inicia el bucle asíncrono (no bloqueante)"""
         print("Conectando al broker MQTT...")
         self.cliente.connect(self.BROKER, self.PUERTO, 60)
         self.cliente.loop_start()  # Esto mantiene la escucha activa en segundo plano
 
+    '''
+    Detiene el bucle y cierra la conexión de forma limpia
+    '''
     def detener(self):
-        """Detiene el bucle y cierra la conexión de forma limpia"""
-        print("Cerrando servidor de fondo...")
         self.cliente.loop_stop()
         self.cliente.disconnect()
+        print("La conexion a terminado")
+
+    '''
+    Usado para insertar datos fijos de pruebas en Firestore
+    '''
+    def probar_insercion_directa(self):
+        ts = self.timestamp_legible()
+        print(f"\n[{ts}] Iniciando prueba de inserción directa a Firestore...")
+        
+        # Simulamos una lectura de 150 CM (Desnivel alto)
+        distancia_prueba = 150
+        tipo_riesgo_prueba = "Desnivel alto"
+        
+        registro_prueba = {
+            "fecha_hora": ts,
+            "evento": "Alerta de Desnivel",
+            "clasificacion": tipo_riesgo_prueba,
+            "lectura": f"{distancia_prueba} CM"
+        }
+        
+        try:
+            # Forzamos la escritura en la misma colección
+            self.db.collection("historial_desniveles").add(registro_prueba)
+            print("El dato fijo se guardó correctamente.")
+        except Exception as e:
+            print("Error al intentar guardar el dato fijo:", e)
 
 
 # --------- Main ------------------
 if __name__ == "__main__":
     # Creamos la instancia de nuestra clase
-    servidor = Firestore()
-    
-    # Arrancamos las conexiones
+    servidor = Firestore()   
+    # Conectamos a MQTT
     servidor.iniciar()
 
     # Menú interactivo en consola (Funciona gracias a loop_start)
     while True:
-        print("\n=========== MENÚ DE CONTROL REMOTO ===========")
-        print("1 -> Forzar Alerta Bocina (MQTT)")
-        print("2 -> Forzar Alerta Vibración (MQTT)")
-        print("3 -> Forzar Alerta Zumbador (MQTT)")
-        print("4 -> Salir")
-        print("==============================================")
-        
-        opcion = input("Seleccione una opción: ")
+        print("\n=== OPCIONES MENU ===")
+        print("1 -> Insertar datos fijos en Firestore ")
+        print("2 -> Salir y cerrar conexiones")
+        print("============================")
+
+        opcion = input("Ingrese una opcion: ")
         
         if opcion == "1":
-            servidor.cliente.publish("baston_equipo_7718/actuadores/bocina", "1")
-            print("Comando enviado: Activar Bocina.")
-        elif opcion == "2":
-            servidor.cliente.publish("baston_equipo_7718/actuadores/vibracion", "1")
-            print("Comando enviado: Activar Vibración.")
-        elif opcion == "3":
-            servidor.cliente.publish("baston_equipo_7718/actuadores/zumbador", "1")
-            print("Comando enviado: Activar Zumbador.")
-        elif opcion == "4":
+            servidor.probar_insercion_directa()
+        elif opcion == 2:
             servidor.detener()
-            print("Servidor finalizado.")
             break
         else:
             print("Opción no válida.")
