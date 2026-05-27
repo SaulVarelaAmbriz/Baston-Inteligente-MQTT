@@ -16,15 +16,10 @@ Bastón Inteligente
 
 
 # IMPORTACIÓN DE MÓDULOS
-
-
 from dispositivos import SensorBox
 from dispositivos import ActuatorBox
-
-from mqtt_manager import MQTTManager
-
+from mqtt_y_firebase import Servidor
 import time
-import machine
 
 
 # INICIALIZACIÓN HAL
@@ -41,56 +36,62 @@ print("HAL inicializada correctamente")
 
 
 # INICIALIZACIÓN MQTT
-print("Inicializando MQTT Manager...")
+print("Inicializando MQTT + Firebase...")
 
-mqtt = MQTTManager(
+servidor = Servidor(
     sensores,
     actuadores
 )
 
 
 # CONEXIÓN WIFI
-mqtt.conectar_wifi()
+servidor.conectar_wifi()
 
 
 # CONEXIÓN MQTT
-mqtt.conectar_mqtt()
+servidor.conectar_mqtt()
 
 print("Sistema MQTT iniciado correctamente")
 
 # LOOP PRINCIPAL
-
 ultima_publicacion = time.time()
+ultima_firebase = time.time() #usamos una variable separada para firebase ya que se reiniciria en tiempo distinto al mqtt
+
+# Sincronizacion NTP para timestamp
+servidor.sincronizar_ntp()
+
+
 
 while True:
 
     try:
         # 1 -- REVISAR MENSAJES MQTT
-        mqtt.escuchar()
-
-
-
-
+        servidor.escuchar()
 
         # 2 -- PUBLICAR TELEMETRÍA
         ahora = time.time()
         
         # Publicar sensores cada 5 segundos
         if (ahora - ultima_publicacion) >= 5:            
-            mqtt.publicar_sensores()
+            servidor.publicar_sensores()
             ultima_publicacion = ahora        
         
-        
-        
-        
-        
-        
+        #ENCARGA DE PUBLICAR Y OBTENER DATOS DE FIREBASE CADA 20 segundos
+        if (ahora - ultima_firebase) >= 20:
+            try:
+                servidor.enviar_sensores_firebase() #enviamos los datos a firebase
+                #Leemos los datos de firebase con ello tambien podemos tomar desiciones al igual que el control remoto
+                servidor.leer_actuadores_firebase()
+                ultima_firebase = ahora
+            except Exception as e:
+                print("Error Firebase:", e)
+       
         # 3 -- Lógica del funcionamiento del bastón:
         control_valor = sensores.control_obtener_valor()        
     
         if control_valor == "ultrasonico_leer_cm":
             print("\nActivando ultrasonico y bocina...")            
-            mqtt.bocina_publicar_encendido()
+            servidor.bocina_publicar_encendido()
             
         elif control_valor == "pir_movimiento":
             pir_valor = sensores.pir_obtener_valor()
@@ -102,17 +103,15 @@ while True:
             #
             #
             if pir_valor == 1:
-                mqtt.vibracion_publicar_encendido()
+                servidor.vibracion_publicar_encendido()
         
         elif control_valor == "zumbador_localizador":
             print("\nActivando Zumbador...")
-            mqtt.zumbador_publicar_encendido()
+            servidor.zumbador_publicar_encendido()
+
                     
         time.sleep(0.1)
         
-        
-
-
     except Exception as e:
 
         print("================================")
@@ -121,6 +120,6 @@ while True:
         print("================================")
 
         # Intento de reconexión MQTT
-        mqtt.reconectar()
+        servidor.reconectar()
 
         time.sleep(2)
