@@ -61,7 +61,7 @@ class Firestore:
     Retorna la fecha y hora actual del servidor (PC) en formato de string
     '''
     def timestamp_legible(self):
-        now = datetime.now()1
+        now = datetime.now()
         
         return now.strftime("%Y-%m-%d %H:%M:%S")
     
@@ -178,7 +178,7 @@ if __name__ == "__main__":
         
         if opcion == "1":
             servidor.probar_insercion_directa()
-        elif opcion == 2:
+        elif opcion == "2":
             servidor.detener()
             break
         else:
