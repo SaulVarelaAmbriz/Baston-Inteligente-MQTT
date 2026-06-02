@@ -15,7 +15,7 @@
 
 
 #LIBRERÍAS
-from typing import Self
+#from typing import Self
 from umqtt.simple import MQTTClient
 import network,gc,time,ntptime,urequests ,machine,ubinascii,ujson
 
@@ -197,10 +197,14 @@ class Servidor:
                 
                 distancia = self.sensores.ultrasonico_obtener_valor()
                 
-                # HAL
-                self.actuadores.reproducir_distancia(
-                    distancia
+                # se publica la distancia del ultrasónico en el broker:
+                self.cliente.publish(
+                    b"baston_equipo_7718/sensores/ultrasonico",
+                    str(distancia)
                     )
+                
+                # HAL
+                self.actuadores.reproducir_distancia(distancia)
                 
                 """
                 Actualizamos el 'estado' en que se encuentra
@@ -209,7 +213,10 @@ class Servidor:
                 self.cliente.publish(
                     b"baston_equipo_7718/actuadores/bocina",
                     self.actuadores.bocina_obtener_estado()
-                    )               
+                    )
+                
+                #pausa de 1 segundo necesaria para visualizar en el broker mqtt qué audio reprodujo la bocina
+                time.sleep(1)
                 
                 """
                 Cuando la bocina se apaga de nuevo,
@@ -284,7 +291,23 @@ class Servidor:
         self.cliente.publish(
             b"baston_equipo_7718/sensores/control",
             str(datos["control"])
-        )        
+        )
+    
+
+
+    #PUBLICAR GPS
+    def publicar_gps(self, latitud, longitud):
+        
+        self.cliente.publish(
+            b"baston_equipo_7718/gps/latitud",
+            str(latitud)
+            )
+        
+        self.cliente.publish(
+            b"baston_equipo_7718/gps/longitud",
+            str(longitud)
+            )
+    
 
 
     # ESCUCHAR MENSAJES MQTT

@@ -190,7 +190,8 @@ class ActuatorBox:
     """
     def __init__(self):
         # Se configura la bocina en el pin 25 usando DAC para reproducir formato WAV
-        self.bocina = DAC(Pin(25))
+        self.bocina = DAC(Pin(25))        
+        
         self.estado = "" # Ayuda a que el audio no se repita sin parar,si no solo una vez
 
         # Se configura el zumbador como salida digital (encendido/apagado)
@@ -210,9 +211,10 @@ class ActuatorBox:
                     if n == 0: break
                     for i in range(n):
                         self.bocina.write(buf[i]) # Envía muestra al DAC 
-                        sleep_us(125) # Delay para 8000Hz (1/8000) 
+                        sleep_us(125) # Delay para 8000Hz (1/8000)                                
+            
         except:
-            print("Error al leer", archivo)
+            print("Error al leer", archivo)            
 
 
     """
@@ -225,19 +227,16 @@ class ActuatorBox:
     def reproducir_distancia(self, distancia):
 
         if distancia > 50 and  distancia < 800 :
-            if self.estado != "alto":
-                self.reproduce_wav("alto.wav")
-                self.estado = "alto"
+            self.reproduce_wav("alto.wav")
+            self.estado = "alto"
         elif distancia > 20:
-            if self.estado != "medio":
-                self.reproduce_wav("medio.wav")
-                self.estado = "medio"
+            self.reproduce_wav("medio.wav")
+            self.estado = "medio"
         elif distancia > 0 :
-            if self.estado != "bajo":
-                self.reproduce_wav("bajo.wav")
-                self.estado = "bajo"
+            self.reproduce_wav("bajo.wav")
+            self.estado = "bajo"
         else:
-            self.estado = "normal"
+            self.estado = "anormal"
 
     def bocina_obtener_estado(self):
         return self.estado

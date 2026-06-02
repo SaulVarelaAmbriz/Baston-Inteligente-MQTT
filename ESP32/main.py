@@ -19,6 +19,7 @@ Bastón Inteligente
 from dispositivos import SensorBox
 from dispositivos import ActuatorBox
 from mqtt_y_firebase import Servidor
+from gps_manager import GPSManager
 import time
 
 
@@ -31,6 +32,9 @@ sensores = SensorBox()
 
 # Instancia de actuadores
 actuadores = ActuatorBox()
+
+# Instancia de GPS
+gps = GPSManager()
 
 print("HAL inicializada correctamente")
 
@@ -51,7 +55,7 @@ servidor.conectar_wifi()
 # CONEXIÓN MQTT
 servidor.conectar_mqtt()
 
-print("Sistema MQTT iniciado correctamente")
+print("Sistema MQTT + Firebase iniciado correctamente")
 
 # LOOP PRINCIPAL
 ultima_publicacion = time.time()
@@ -65,18 +69,29 @@ servidor.sincronizar_ntp()
 while True:
 
     try:
-        # 1 -- REVISAR MENSAJES MQTT
+        print('Hola')
+        
+        # REVISAR MENSAJES MQTT
         servidor.escuchar()
 
-        # 2 -- PUBLICAR TELEMETRÍA
-        ahora = time.time()
+        # Se toma el tiempo para "actuar" en 'publicar sensores y gps' y 'firebase'
+        ahora = time.time()        
         
-        # Publicar sensores cada 5 segundos
+        # 1.- Publicar sensores y gps cada 5 segundos al broker mqtt:        
         if (ahora - ultima_publicacion) >= 5:            
             servidor.publicar_sensores()
-            ultima_publicacion = ahora        
+            
+            datos = gps.obtener_coordenadas()
+            if datos != None:
+                servidor.publicar_gps(datos["latitud"], datos["longitud"])
+            
+            ultima_publicacion = ahora
         
-        #ENCARGA DE PUBLICAR Y OBTENER DATOS DE FIREBASE CADA 20 segundos
+        
+        
+        
+        
+        # 2.- SE ENCARGA DE PUBLICAR Y OBTENER DATOS DE FIREBASE CADA 20 segundos
         if (ahora - ultima_firebase) >= 20:
             try:
                 servidor.enviar_sensores_firebase() #enviamos los datos a firebase
@@ -85,7 +100,12 @@ while True:
                 ultima_firebase = ahora
             except Exception as e:
                 print("Error Firebase:", e)
+        
+        
        
+        
+        
+        
         # 3 -- Lógica del funcionamiento del bastón:
         control_valor = sensores.control_obtener_valor()        
     
