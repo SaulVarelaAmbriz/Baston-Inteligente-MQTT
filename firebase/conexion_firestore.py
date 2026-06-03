@@ -56,6 +56,8 @@ class Firestore:
 
         # Tópicos utilizados
         self.TOPICO_BOCINA = "baston_equipo_7718/actuadores/bocina"
+        self.TOPICO_MOTOR = "baston_equipo_7718/actuadores/vibracion"
+        self.TOPICO_ZUMBADOR = "baston_equipo_7718/actuadores/zumbador"
     
     '''
     Retorna la fecha y hora actual del servidor (PC) en formato de string
@@ -74,6 +76,8 @@ class Firestore:
         if rc == 0:
             print("Conectado exitosamente al Broker MQTT.")
             self.cliente.subscribe(self.TOPICO_BOCINA)
+            self.cliente.subscribe(self.TOPICO_MOTOR)
+            self.cliente.subscribe(self.TOPICO_ZUMBADOR)
             print("Suscrito. Esperando datos...")
         else:
             print(f"Error de conexión al Broker.Código de retorno: {rc}")
@@ -118,10 +122,35 @@ class Firestore:
                     
                     # Guardamos en la colección de Firestore usando self.db
                     self.db.collection("historial_desniveles").add(registro_desnivel)
-                    print(f" Histórico registrado: {clasificacion} ({distancia} CM)")
-                    
+                    print(f" Histórico registrado: {clasificacion} ({distancia} CM)")                   
             except Exception as e:
-                print("Error al procesar datos del ultrasónico:", e)
+                print("Error al procesar datos de la bocina:", e)
+
+        elif topico == self.TOPICO_MOTOR:
+            try:
+                if mensaje == '1':
+                    registro_presencia = {
+                        "fecha_hora": ts,
+                        "evento": "Alerta presencia persona"
+                        }
+
+                    #Guardamos el registro
+                    self.db.collection("historial_presencia").add(registro_presencia)
+            except Exception as e:
+                print("Error al procesar el valor del motor de vibracion")
+        elif topico == self.TOPICO_ZUMBADOR:
+            try:
+                if mensaje == '1':
+                    registro_localizacion = {
+                        "fecha_hora": ts,
+                        "evento": "Se activo el buscador del baston"
+                        }
+
+                    #Guardamos el registro
+                    self.db.collection("historial_localizacion").add(registro_localizacion)
+            except Exception as e:
+                print("Error al procesar el valor del zumbador")
+
 
     '''
         Conecta al broker e inicia un bucle asincrono (no bloqueante)
@@ -152,14 +181,25 @@ class Firestore:
         
         registro_prueba = {
             "fecha_hora": ts,
+            "evento": "Se activo el buscador del baston"
+        }
+        
+        registro_prueba2 = {
+            "fecha_hora": ts,
+            "evento": "Alerta presencia persona"
+        }
+
+        registro_prueba3 = {
+            "fecha_hora": ts,
             "evento": "Alerta de Desnivel",
             "clasificacion": tipo_riesgo_prueba,
             "lectura": f"{distancia_prueba} CM"
         }
-        
         try:
             # Forzamos la escritura en la misma colección
-            self.db.collection("historial_desniveles").add(registro_prueba)
+            self.db.collection("historial_localizacion").add(registro_prueba)
+            self.db.collection("historial_presencia").add(registro_prueba2)
+            self.db.collection("historial_desniveles").add(registro_prueba3)
             print("El dato fijo se guardó correctamente.")
         except Exception as e:
             print("Error al intentar guardar el dato fijo:", e)
