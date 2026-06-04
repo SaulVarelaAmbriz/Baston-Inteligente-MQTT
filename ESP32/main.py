@@ -18,7 +18,7 @@ Bastón Inteligente
 # IMPORTACIÓN DE MÓDULOS
 from dispositivos import SensorBox
 from dispositivos import ActuatorBox
-from mqtt_y_firebase import Servidor
+from mqtt import MQTT
 from gps_manager import GPSManager
 import time
 
@@ -42,7 +42,7 @@ print("HAL inicializada correctamente")
 # INICIALIZACIÓN MQTT
 print("Inicializando MQTT + Firebase...")
 
-servidor = Servidor(
+servidor = MQTT(
     sensores,
     actuadores
 )
@@ -86,25 +86,7 @@ while True:
                 servidor.publicar_gps(datos["latitud"], datos["longitud"])
             
             ultima_publicacion = ahora
-        
-        
-        
-        
-        
-        # 2.- SE ENCARGA DE PUBLICAR Y OBTENER DATOS DE FIREBASE CADA 20 segundos
-        if (ahora - ultima_firebase) >= 20:
-            try:
-                servidor.enviar_sensores_firebase() #enviamos los datos a firebase
-                #Leemos los datos de firebase con ello tambien podemos tomar desiciones al igual que el control remoto
-                servidor.leer_actuadores_firebase()
-                ultima_firebase = ahora
-            except Exception as e:
-                print("Error Firebase:", e)
-        
-        
-       
-        
-        
+           
         
         # 3 -- Lógica del funcionamiento del bastón:
         control_valor = sensores.control_obtener_valor()        

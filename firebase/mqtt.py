@@ -15,13 +15,13 @@
 
 
 #LIBRERÍAS
-#from typing import Self
+from typing import Self
 from umqtt.simple import MQTTClient
 import network,gc,time,ntptime,urequests ,machine,ubinascii,ujson
 
 
 
-class Servidor:
+class MQTT:
     """
     Clase encargada de administrar la conexión MQTT,
     la publicación de sensores y la recepción de
@@ -72,8 +72,6 @@ class Servidor:
             self.mensaje_recibido
         )
 
-        # RUTA CONEXION A FIREBASE
-        self.FIREBASE_URL  = 'https://bastoninteligente-311b5-default-rtdb.firebaseio.com/'
 
     # WIFI
     def conectar_wifi(self):
@@ -197,14 +195,10 @@ class Servidor:
                 
                 distancia = self.sensores.ultrasonico_obtener_valor()
                 
-                # se publica la distancia del ultrasónico en el broker:
-                self.cliente.publish(
-                    b"baston_equipo_7718/sensores/ultrasonico",
-                    str(distancia)
-                    )
-                
                 # HAL
-                self.actuadores.reproducir_distancia(distancia)
+                self.actuadores.reproducir_distancia(
+                    distancia
+                    )
                 
                 """
                 Actualizamos el 'estado' en que se encuentra
@@ -213,10 +207,7 @@ class Servidor:
                 self.cliente.publish(
                     b"baston_equipo_7718/actuadores/bocina",
                     self.actuadores.bocina_obtener_estado()
-                    )
-                
-                #pausa de 1 segundo necesaria para visualizar en el broker mqtt qué audio reprodujo la bocina
-                time.sleep(1)
+                    )               
                 
                 """
                 Cuando la bocina se apaga de nuevo,
@@ -291,23 +282,7 @@ class Servidor:
         self.cliente.publish(
             b"baston_equipo_7718/sensores/control",
             str(datos["control"])
-        )
-    
-
-
-    #PUBLICAR GPS
-    def publicar_gps(self, latitud, longitud):
-        
-        self.cliente.publish(
-            b"baston_equipo_7718/gps/latitud",
-            str(latitud)
-            )
-        
-        self.cliente.publish(
-            b"baston_equipo_7718/gps/longitud",
-            str(longitud)
-            )
-    
+        )        
 
 
     # ESCUCHAR MENSAJES MQTT
@@ -341,133 +316,3 @@ class Servidor:
             print(e)
 
             machine.reset()
-    
-    """
-    Recibimos la ruta del sensor para el cual vamos a escribir datos, asi como su dato
-    Realizamos un Put a la API,serializamos a Json y cerramos la respuesta con .close .Esto evita que sigamos consumiendo RAM
-    """
-    def fb_put(self,ruta, valor):
-        url = self.FIREBASE_URL + ruta + ".json"
-        try:
-            respuesta = urequests.put(url, data=ujson.dumps(valor))
-            respuesta.close()   # CRÍTICO: liberar socket en MicroPython
-        except Exception as e:
-            print("Firebase PUT error [%s]: %s" % (ruta, e))
-        finally:
-            gc.collect()
- 
-    """
-    Recibimos la ruta del actuador del cual leeremos los datos.
-    El metodo que hacemos es un GET, deserealizamos la respuesta y cerramos la conexion.
-    Retornamos los datos o none si hay un error
-    """
-    def fb_get(self,ruta):
-        url = self.FIREBASE_URL + ruta + ".json"
-        try:
-            respuesta = urequests.get(url)
-            datos     = respuesta.json()
-            respuesta.close()   # CRÍTICO: liberar socket en MicroPython
-            gc.collect()
-            return datos
-        except Exception as e:
-            print("Firebase GET error [%s]: %s" % (ruta, e))
-            gc.collect()
-            return None
-
-    """
-    Sincroniza el reloj del ESP32 con el NTP de Micropython.Si no devolver una fecha muy antigua
-    """
-
-    def sincronizar_ntp(self):
-        try:
-            ntptime.settime()
-            print("Reloj sincronizado con NTP.")
-        except Exception as e:
-            print("NTP falló (%s). Se usará tiempo relativo." % e)
- 
- 
-    """
-    Despues de la sincronizacion NTP , pasamos a formato YYYY-MM-DD HH:MM:SS.
-    El offset -6 ajusta a hora de Mexico
-    Retorna la fecha y hora actual en formato string
-    """
-    def timestamp_legible(self):
-        OFFSET_HORAS = -6          # UTC-6 México Centro (ajustar si es necesario)
-        t = time.time() + OFFSET_HORAS * 3600
-        año, mes, dia, hora, minuto, segundo = time.localtime(t)[:6]
-        return "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(
-            año, mes, dia, hora, minuto, segundo
-    )
- 
-
-    """
-    Se encarga de escribir los datos en firebase
-    bg = False garantiza la escritura 
-    Adicional mandamos timestamp en su respectivo formato
-    """
-    def enviar_sensores_firebase(self):
-        ts = self.timestamp_legible()
-        
-        datos = self.sensores.obtener_resumen_sensores()
-
-        # Escritura agrupada: un solo PUT por sub-nodo reduce llamadas HTTP
-        self.fb_put("sensores/ultrasonico", {
-            "distancia_cm": datos["ultrasonico"],
-            "actualizado":  ts
-        })
-        self.fb_put("sensores/pir", {
-            "movimiento":  datos["pir"],
-            "actualizado": ts
-        })
-        self.fb_put("sensores/control", {
-            "boton":       datos["control"],
-            "actualizado": ts
-        })
- 
-        print("Firebase ► Enviados [%s]:" % ts, datos)
-        gc.collect()
-        print("Memoria libre:", gc.mem_free())
- 
-
-
-    """
-    Consulta el nodo donde se encuentran los actuadores, se activan si la bandera es True
-    """
-    def leer_actuadores_firebase(self):
-
-        # BOCINA
-        sonido = self.fb_get("actuadores/bocina/sonido")
-        if sonido:
-            print("Activando bocina")
-            distancia = self.sensores.ultrasonico_obtener_valor()
-                
-            # HAL
-            self.actuadores.reproducir_distancia(distancia)
-
-            """
-            Restablecemos la bandera para el proximo ciclo
-            """
-            self.fb_put("actuadores/bocina/sonido",False)
-                
- 
-        # Zumbador: activar si la bandera está en True 
-        activar = self.fb_get("actuadores/zumbador/sonido")
-        if activar:
-            print("Activando localizador")
-            self.actuadores.activar_modo_localizacion()
-                
-            """
-            Restablecemos la bandera para el proximo ciclo
-            """
-            self.fb_put("actuadores/zumbador/sonido",False)
- 
-        # MOTOR DE VIBRACION
-        vibrar = self.fb_get("actuadores/motor/vibracion")
-        if vibrar:
-            print("Activando vibración")
-                
-            self.actuadores.vibracion_intermitente()
-                
-            """Restablecemos el valor para el proximo ciclo"""
-            self.fb_put("actuadores/motor/vibracion",False)
-

@@ -12,10 +12,11 @@
 import time
 from datetime import datetime
 import firebase_admin
+import requests
 from firebase_admin import credentials, firestore
 import paho.mqtt.client as mqtt  # Librería MQTT estándar para PC
 
-class Firestore:
+class Firebase:
     '''
     Incializa la conexion con Firestore y configura MQTT
     '''
@@ -24,6 +25,8 @@ class Firestore:
         Constructor: Inicializa la conexión con Firestore y configura MQTT.
         Hacemos uso del archivo JSON que contiene la clave privada , necesaria para autenticar y poder almacenar datos en Firestore
         """
+        # RUTA CONEXION A FIREBASE
+        self.FIREBASE_URL  = 'https://bastoninteligente-311b5-default-rtdb.firebaseio.com/'
         try:
             cred = credentials.Certificate("bastoninteligente-311b5-firebase-adminsdk-fbsvc-872f6c099c.json") 
             firebase_admin.initialize_app(cred)
@@ -34,6 +37,8 @@ class Firestore:
          
             # Inicializamos la configuración de MQTT
             self.configurar_mqtt()
+
+            
         except Exception as e:
             print("Error al establecer conexion a Firestore", e)
             exit()
@@ -58,6 +63,9 @@ class Firestore:
         self.TOPICO_BOCINA = "baston_equipo_7718/actuadores/bocina"
         self.TOPICO_MOTOR = "baston_equipo_7718/actuadores/vibracion"
         self.TOPICO_ZUMBADOR = "baston_equipo_7718/actuadores/zumbador"
+        self.TOPICO_PIR = "baston_equipo_7718/sensores/pir"
+        self.TOPICO_ULTRASONICO= "baston_equipo_7718/sensores/ultrasonico"
+        self.TOPICO_CONTROL = "baston_equipo_7718/sensores/control"
     
     '''
     Retorna la fecha y hora actual del servidor (PC) en formato de string
@@ -78,13 +86,16 @@ class Firestore:
             self.cliente.subscribe(self.TOPICO_BOCINA)
             self.cliente.subscribe(self.TOPICO_MOTOR)
             self.cliente.subscribe(self.TOPICO_ZUMBADOR)
+            self.cliente.subscribe(self.TOPICO_PIR)
+            self.cliente.subscribe(self.TOPICO_ULTRASONICO)
+            self.cliente.subscribe(self.TOPICO_CONTROL)
             print("Suscrito. Esperando datos...")
         else:
             print(f"Error de conexión al Broker.Código de retorno: {rc}")
 
     '''
     Se ejecuta automaticamente por medio del callback que acciona cuando recibe un mensaje de MQTT
-    Encargado de guardar los datos en Firestore , una vez recibidos.
+    Encargado de guardar los datos en Firestore y Real time databse, una vez recibidos.
     Guarda los datos relevantes, como cuando la distancia es mayor a 20, de esta manera la persona de apoyo del no vidente
     sabe que tan expuesto al riesgo esta el usuario y que ubicaciones evitar para evitar accidentes.
     '''
@@ -97,6 +108,10 @@ class Firestore:
 
         print(f"[{ts}] Telemetría Recibida -> {topico.split('/')[-1]}: {mensaje}")
 
+        self.enviar_a_realtime_database(topico,mensaje,ts)
+        self.enviar_firestore(topico,mensaje,ts)
+
+    def enviar_firestore(self,topico,mensaje,ts):
         # EVALUACIÓN DEL EVENTO: BOCINA
         if topico == self.TOPICO_BOCINA:
             try:
@@ -168,65 +183,72 @@ class Firestore:
         self.cliente.disconnect()
         print("La conexion a terminado")
 
-    '''
-    Usado para insertar datos fijos de pruebas en Firestore
-    '''
-    def probar_insercion_directa(self):
-        ts = self.timestamp_legible()
-        print(f"\n[{ts}] Iniciando prueba de inserción directa a Firestore...")
-        
-        # Simulamos una lectura de 150 CM (Desnivel alto)
-        distancia_prueba = 150
-        tipo_riesgo_prueba = "Desnivel alto"
-        
-        registro_prueba = {
-            "fecha_hora": ts,
-            "evento": "Se activo el buscador del baston"
-        }
-        
-        registro_prueba2 = {
-            "fecha_hora": ts,
-            "evento": "Alerta presencia persona"
-        }
+#--------------------FIREBASE---------------------------
 
-        registro_prueba3 = {
-            "fecha_hora": ts,
-            "evento": "Alerta de Desnivel",
-            "clasificacion": tipo_riesgo_prueba,
-            "lectura": f"{distancia_prueba} CM"
-        }
+    """
+    Recibimos la ruta del sensor para el cual vamos a escribir datos, asi como su dato
+    Realizamos un Put a la API,serializamos a Json y cerramos la respuesta con .close .Esto evita que sigamos consumiendo RAM
+    """
+    def fb_put(self, ruta, valor):
+        url = self.FIREBASE_URL + ruta + ".json"
         try:
-            # Forzamos la escritura en la misma colección
-            self.db.collection("historial_localizacion").add(registro_prueba)
-            self.db.collection("historial_presencia").add(registro_prueba2)
-            self.db.collection("historial_desniveles").add(registro_prueba3)
-            print("El dato fijo se guardó correctamente.")
+            respuesta = requests.put(url, json=valor, timeout=5)
+            respuesta.close()
         except Exception as e:
-            print("Error al intentar guardar el dato fijo:", e)
+            print(f"Error en Realtime DB PUT [{ruta}]: {e}")
+ 
+
+    """
+    Se encarga de escribir los datos en firebase
+    bg = False garantiza la escritura 
+    Adicional mandamos timestamp en su respectivo formato
+    """
+    def enviar_a_realtime_database(self,topico,mensaje,ts):
+        ts = self.timestamp_legible()
+
+        if topico == self.TOPICO_ULTRASONICO:
+            # Escritura agrupada: un solo PUT por sub-nodo reduce llamadas HTTP
+            self.fb_put("sensores/ultrasonico", {
+                "distancia_cm": mensaje,
+            })
+        elif topico == self.TOPICO_PIR:
+            self.fb_put("sensores/pir", {
+                "movimiento": mensaje,
+                "actualizado": ts
+            })
+        elif topico == self.TOPICO_CONTROL:
+            self.fb_put("sensores/control", {
+                "boton": mensaje,
+                "actualizado": ts
+            })
+        elif topico == self.TOPICO_BOCINA:
+            self.fb_put("actuadores/bocina", {
+                "sonido": mensaje,
+                "actualizado": ts
+            }) 
+        elif topico == self.TOPICO_ZUMBADOR:
+            self.fb_put("actuadores/zumbador", {
+                "sonido": mensaje,
+                "actualizado": ts
+            })  
+        elif topico == self.TOPICO_MOTOR:
+            self.fb_put("actuadores/motor", {
+                "vibracion": mensaje,
+                "actualizado": ts
+            })       
+        print("Firebase ► Enviados [%s]:" % ts, mensaje)
 
 
 # --------- Main ------------------
 if __name__ == "__main__":
     # Creamos la instancia de nuestra clase
-    servidor = Firestore()   
+    servidor = Firebase()   
     # Conectamos a MQTT
     servidor.iniciar()
 
-    # Menú interactivo en consola (Funciona gracias a loop_start)
-    while True:
-        print("\n=== OPCIONES MENU ===")
-        print("1 -> Insertar datos fijos en Firestore ")
-        print("2 -> Salir y cerrar conexiones")
-        print("============================")
+    # nos ayuda a establecer una diferencia de tiempo y poder publicar en firebase
+    ultima_publicacion = time.time()
 
-        opcion = input("Ingrese una opcion: ")
-        
-        if opcion == "1":
-            servidor.probar_insercion_directa()
-        elif opcion == "2":
-            servidor.detener()
-            break
-        else:
-            print("Opción no válida.")
-            
+    #El ciclo no ejecuta nada , simplemente mantiene vivo el codito , parq  cuaando haya una peticion desde un topico
+    while True:
         time.sleep(1)
