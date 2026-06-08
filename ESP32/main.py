@@ -57,63 +57,64 @@ servidor.conectar_mqtt()
 
 print("Sistema MQTT + Firebase iniciado correctamente")
 
+
 # LOOP PRINCIPAL
 ultima_publicacion = time.time()
-ultima_firebase = time.time() #usamos una variable separada para firebase ya que se reiniciria en tiempo distinto al mqtt
-
-# Sincronizacion NTP para timestamp
-servidor.sincronizar_ntp()
-
-
+ultima_firebase = time.time()
 
 while True:
 
     try:
-        print('Hola')
-        
+
         # REVISAR MENSAJES MQTT
         servidor.escuchar()
 
-        # Se toma el tiempo para "actuar" en 'publicar sensores y gps' y 'firebase'
-        ahora = time.time()        
-        
-        # 1.- Publicar sensores y gps cada 5 segundos al broker mqtt:        
-        if (ahora - ultima_publicacion) >= 5:            
+        # TIEMPO ACTUAL
+        ahora = time.time()
+
+        # PUBLICAR SENSORES Y GPS CADA 5 SEGUNDOS
+        if (ahora - ultima_publicacion) >= 5:
+
             servidor.publicar_sensores()
-            
+
             datos = gps.obtener_coordenadas()
+
             if datos != None:
-                servidor.publicar_gps(datos["latitud"], datos["longitud"])
-            
+                servidor.publicar_gps(
+                    datos["latitud"],
+                    datos["longitud"]
+                )
+
             ultima_publicacion = ahora
-           
-        
-        # 3 -- Lógica del funcionamiento del bastón:
-        control_valor = sensores.control_obtener_valor()        
-    
+
+        # ==================================================
+        # LÓGICA PRINCIPAL DEL BASTÓN
+        # ==================================================
+
+        control_valor = sensores.control_obtener_valor()
+
+        # ULTRASÓNICO + BOCINA
         if control_valor == "ultrasonico_leer_cm":
-            print("\nActivando ultrasonico y bocina...")            
+
+            print("\nActivando ultrasonico y bocina...")
+
             servidor.bocina_publicar_encendido()
-            
+
+        # IA + PIR
         elif control_valor == "pir_movimiento":
-            pir_valor = sensores.pir_obtener_valor()
-            
-            print("\nValor del PIR...")            
-            print(pir_valor)
-            # Falta la implementación de la cámara cuando 'pir_valor = 1'
-            # y el motor de vibración            
-            #
-            #
-            if pir_valor == 1:
-                servidor.vibracion_publicar_encendido()
-        
+
+            print("\nModo IA activado")
+
+
+        # LOCALIZADOR
         elif control_valor == "zumbador_localizador":
+
             print("\nActivando Zumbador...")
+
             servidor.zumbador_publicar_encendido()
 
-                    
         time.sleep(0.1)
-        
+
     except Exception as e:
 
         print("================================")
