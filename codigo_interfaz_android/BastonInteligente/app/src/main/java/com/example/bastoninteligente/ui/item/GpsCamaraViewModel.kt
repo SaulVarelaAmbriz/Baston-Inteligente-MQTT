@@ -1,3 +1,16 @@
+/*
+OBJETIVO:
+ViewModel para la vista de GPS que consulta los datos del bastón
+mediante mqtt y los convierte a una dirección legible para el usuario
+
+INTEGRANTES:
+Ramirez Abundiz Berenice 22240234
+Rivera Ponce David Eduardo 22240226
+Varela Ambriz Saul 22240256
+
+PROYECTO:
+Bastón Inteligente
+ */
 package com.example.bastoninteligente.ui.item
 
 import android.location.Geocoder

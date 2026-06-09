@@ -1,3 +1,15 @@
+/*
+OBJETIVO:
+Vista de inicio de sesión que se encarga de validar las credenciales
+
+INTEGRANTES:
+Ramirez Abundiz Berenice 22240234
+Rivera Ponce David Eduardo 22240226
+Varela Ambriz Saul 22240256
+
+PROYECTO:
+Bastón Inteligente
+ */
 package com.example.bastoninteligente.ui.home
 
 import androidx.compose.foundation.layout.Arrangement

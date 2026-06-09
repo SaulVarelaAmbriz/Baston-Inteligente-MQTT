@@ -1,3 +1,16 @@
+/*
+OBJETIVO:
+Manejar el guardado y la lectura del usuario y contraseña en el DataStore
+
+INTEGRANTES:
+Ramirez Abundiz Berenice 22240234
+Rivera Ponce David Eduardo 22240226
+Varela Ambriz Saul 22240256
+
+PROYECTO:
+Bastón Inteligente
+ */
+
 //Para manejar el guardado y la lectura del usuario y contraseña.
 package com.example.bastoninteligente.data.local.datastore
 

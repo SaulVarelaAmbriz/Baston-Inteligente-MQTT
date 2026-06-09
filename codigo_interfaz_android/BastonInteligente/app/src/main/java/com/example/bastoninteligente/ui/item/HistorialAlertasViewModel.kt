@@ -1,3 +1,17 @@
+/*
+OBJETIVO:
+ViewModel de la vista de historial de alertas de la bocina que se conecta a
+firestore y muestra los datos en tiempo real.
+Además se encarga de mantener los datos en la base de datos Room para persistencia
+
+INTEGRANTES:
+Ramirez Abundiz Berenice 22240234
+Rivera Ponce David Eduardo 22240226
+Varela Ambriz Saul 22240256
+
+PROYECTO:
+Bastón Inteligente
+ */
 package com.example.bastoninteligente.ui.item
 
 import androidx.lifecycle.ViewModel

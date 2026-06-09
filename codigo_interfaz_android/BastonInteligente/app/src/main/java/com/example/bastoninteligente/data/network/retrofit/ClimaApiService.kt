@@ -1,3 +1,15 @@
+/*
+OBJETIVO:
+Interfaz con los Endpoints de la API
+
+INTEGRANTES:
+Ramirez Abundiz Berenice 22240234
+Rivera Ponce David Eduardo 22240226
+Varela Ambriz Saul 22240256
+
+PROYECTO:
+Bastón Inteligente
+ */
 package com.example.bastoninteligente.data.network.retrofit
 
 import retrofit2.http.GET

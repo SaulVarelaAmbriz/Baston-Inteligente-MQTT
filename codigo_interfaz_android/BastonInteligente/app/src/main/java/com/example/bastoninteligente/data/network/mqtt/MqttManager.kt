@@ -1,3 +1,19 @@
+/*
+OBJETIVO:
+Clas que permite:
+La conexión al bróker público de EMQX
+La suscripción a los tópicos de telemetría
+El envío de instrucciones a los actuadores
+La desconexión del cliente
+
+INTEGRANTES:
+Ramirez Abundiz Berenice 22240234
+Rivera Ponce David Eduardo 22240226
+Varela Ambriz Saul 22240256
+
+PROYECTO:
+Bastón Inteligente
+ */
 package com.example.bastoninteligente.data.network.mqtt
 
 import android.util.Log

@@ -1,3 +1,16 @@
+/*
+OBJETIVO:
+ViewModel de la vista de tablero de lectura que se encarga de
+comunicarse con el bastón mediante mqtt y mostrar los datos en tiempo real
+
+INTEGRANTES:
+Ramirez Abundiz Berenice 22240234
+Rivera Ponce David Eduardo 22240226
+Varela Ambriz Saul 22240256
+
+PROYECTO:
+Bastón Inteligente
+ */
 package com.example.bastoninteligente.ui.item
 
 import androidx.lifecycle.ViewModel

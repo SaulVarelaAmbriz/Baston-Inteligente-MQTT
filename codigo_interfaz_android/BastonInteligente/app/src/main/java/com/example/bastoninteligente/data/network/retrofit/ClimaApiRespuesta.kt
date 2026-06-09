@@ -1,3 +1,15 @@
+/*
+OBJETIVO:
+Clase que representa la respuesta completa (raíz) que viene de la API Open-Meteo.
+
+INTEGRANTES:
+Ramirez Abundiz Berenice 22240234
+Rivera Ponce David Eduardo 22240226
+Varela Ambriz Saul 22240256
+
+PROYECTO:
+Bastón Inteligente
+ */
 package com.example.bastoninteligente.data.network.retrofit
 
 import kotlinx.serialization.SerialName

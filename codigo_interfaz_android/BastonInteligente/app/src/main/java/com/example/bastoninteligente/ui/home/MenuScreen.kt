@@ -1,3 +1,15 @@
+/*
+OBJETIVO:
+Vista del menú que se encarga de navegar a las demás vistas
+
+INTEGRANTES:
+Ramirez Abundiz Berenice 22240234
+Rivera Ponce David Eduardo 22240226
+Varela Ambriz Saul 22240256
+
+PROYECTO:
+Bastón Inteligente
+ */
 package com.example.bastoninteligente.ui.home
 
 import androidx.compose.foundation.BorderStroke

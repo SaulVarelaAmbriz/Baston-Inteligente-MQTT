@@ -1,3 +1,15 @@
+/*
+OBJETIVO:
+Definir navegación de la aplicación utilizando 'navController'
+
+INTEGRANTES:
+Ramirez Abundiz Berenice 22240234
+Rivera Ponce David Eduardo 22240226
+Varela Ambriz Saul 22240256
+
+PROYECTO:
+Bastón Inteligente
+ */
 package com.example.bastoninteligente.ui.navigation
 
 import androidx.compose.runtime.Composable

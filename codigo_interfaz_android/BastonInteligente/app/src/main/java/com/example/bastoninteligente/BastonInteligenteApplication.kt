@@ -1,3 +1,15 @@
+/*
+OBJETIVO:
+Creación de dependencias necesarias para todo el proyecto
+
+INTEGRANTES:
+Ramirez Abundiz Berenice 22240234
+Rivera Ponce David Eduardo 22240226
+Varela Ambriz Saul 22240256
+
+PROYECTO:
+Bastón Inteligente
+ */
 package com.example.bastoninteligente
 
 import android.app.Application
