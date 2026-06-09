@@ -15,7 +15,6 @@
 
 
 #LIBRERÍAS
-from typing import Self
 from umqtt.simple import MQTTClient
 import network,gc,time,ntptime,urequests ,machine,ubinascii,ujson
 
@@ -46,8 +45,8 @@ class MQTT:
 
 
         #WIFI DATOS
-        self.SSID = "Megacable_2.4G_8DDA"
-        self.PASSWORD = "Mqap7dUM"        
+        self.SSID = "DavidRivera"
+        self.PASSWORD = "davRivPonEdu"        
 
 
         # CONFIGURACIÓN MQTT
@@ -249,9 +248,20 @@ class MQTT:
         self.cliente.publish(
             b"baston_equipo_7718/actuadores/bocina",
             str(1)
+        )
+
+
+    def control_publicar_encendido(self, instruccion):
+        self.cliente.publish(
+            b"baston_equipo_7718/sensores/control",
+            instruccion
+        )        
+
+    def pir_publicar_encendido(self, valor):
+        self.cliente.publish(
+            b"baston_equipo_7718/sensores/control",
+            str(valor)
         )                    
-        
-        
     
     
     # PUBLICAR SENSORES

@@ -79,14 +79,13 @@ def on_message(client, userdata, msg):
         if not modo_ia:
             return
 
+        modo_ia = False
+
         if mensaje == "1":
-
             pir_activo = True
-
             print("MOVIMIENTO DETECTADO")
 
         else:
-
             pir_activo = False
 
 

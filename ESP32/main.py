@@ -105,6 +105,16 @@ while True:
 
             print("\nModo IA activado")
 
+            servidor.control_publicar_encendido(control_valor)
+
+            pir_valor = sensores.pir_obtener_valor()
+            print("\nPIR: ", pir_valor)            
+            servidor.pir_publicar_encendido(pir_valor)
+
+            sensores.control_limpiar_valor()
+            
+
+
 
         # LOCALIZADOR
         elif control_valor == "zumbador_localizador":

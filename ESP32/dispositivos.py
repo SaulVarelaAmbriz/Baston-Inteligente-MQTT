@@ -82,7 +82,7 @@ class SensorBox:
         
         self.control_limpiar_valor()
         
-        if decision not in ("desconocido", "resumen"):
+        if decision not in ("desconocido", "resumen", "pir_movimiento"):
             self.control_ultimo = decision
             
         return decision
