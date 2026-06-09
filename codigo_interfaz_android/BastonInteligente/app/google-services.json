@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1003325682534",
+    "firebase_url": "https://bastoninteligente-311b5-default-rtdb.firebaseio.com",
+    "project_id": "bastoninteligente-311b5",
+    "storage_bucket": "bastoninteligente-311b5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1003325682534:android:ebe8c8399b90f62e168ea7",
+        "android_client_info": {
+          "package_name": "com.example.bastoninteligente"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEu8pFbE1jxU1h8LNayI_Mag_0KuE3oeM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
