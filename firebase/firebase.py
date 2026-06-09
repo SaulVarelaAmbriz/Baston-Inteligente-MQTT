@@ -1,4 +1,4 @@
-# OBJETIVO:
+# OBJETIVO:Gestión de Firebase y Dashboard de usuario
 # Almacenar los datos previamente publicados en el broker de MQTT en una base de datos persistente en la nube (Firestore)
 
 # INTEGRANTES:
